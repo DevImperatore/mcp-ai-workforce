@@ -60,6 +60,13 @@ def validate_safe_path(
     root_path = Path(root_raw).resolve()
 
     target_raw = Path(requested_path)
+
+    # Detect Windows drive paths on POSIX systems (e.g. Linux CI runner)
+    if os.name != "nt" and re.match(r"^[a-zA-Z]:", str(requested_path)):
+        raise PermissionError(
+            f"Access denied: Requested path '{requested_path}' contains Windows drive root, outside authorized workspace root."
+        )
+
     if not target_raw.is_absolute():
         target_path = (root_path / target_raw).resolve()
     else:

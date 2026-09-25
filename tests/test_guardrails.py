@@ -69,8 +69,14 @@ class TestValidateSafePath:
         ]
 
         for win_path in windows_paths:
-            with pytest.raises(PermissionError, match="outside authorized workspace root"):
+            with pytest.raises(PermissionError, match="outside authorized workspace root|Access denied"):
                 validate_safe_path(win_path, workspace_root=workspace)
+
+        # POSIX system directories
+        posix_paths = ["/etc/passwd", "/var/log", "/bin/sh", "/usr/bin"]
+        for posix_path in posix_paths:
+            with pytest.raises(PermissionError, match="outside authorized workspace root|Access denied"):
+                validate_safe_path(posix_path, workspace_root=workspace)
 
     def test_absolute_paths_outside_workspace_blocked(self, tmp_path: Path):
         """Test that absolute paths pointing anywhere outside the workspace root are blocked."""
