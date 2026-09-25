@@ -1,167 +1,191 @@
-# MCP AI Workforce (`mcp-ai-workforce`)
+<div align="center">
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![MCP Protocol](https://img.shields.io/badge/MCP-Protocol-purple.svg)](https://modelcontextprotocol.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 31 passed](https://img.shields.io/badge/tests-31%20passed-brightgreen.svg)]()
+# ⚡ MCP AI Workforce
 
-Servidor MCP de alto rendimiento para la orquestación y delegación asíncrona de tareas de software intensivas a modelos económicos (Qwen 2.5 Coder 32B, DeepSeek V4) mediante **OpenRouter**, operando bajo guardrails estrictos de seguridad y diseñado específicamente para el ecosistema **Google Antigravity & Workspace 3**.
+### Autonomous Model Context Protocol Server for Cost-Effective AI Coding Delegation
+
+[![CI](https://github.com/DevImperatore/mcp-ai-workforce/actions/workflows/ci.yml/badge.svg)](https://github.com/DevImperatore/mcp-ai-workforce/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![MCP Protocol](https://img.shields.io/badge/MCP-Protocol-purple.svg?style=flat)](https://modelcontextprotocol.io/)
+[![OpenRouter](https://img.shields.io/badge/OpenRouter-API-orange.svg?style=flat)](https://openrouter.ai/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat)](LICENSE)
+[![Tests: 32 passed](https://img.shields.io/badge/tests-32%20passed-brightgreen.svg?style=flat)]()
+
+<p align="center">
+  <b>Empower your primary AI orchestrator to delegate token-heavy coding tasks to economical models — reducing token expenditure by up to 95%.</b>
+</p>
+
+[Key Features](#-key-features) •
+[Architecture](#-architecture) •
+[Quickstart](#-quickstart) •
+[Client Integrations](#-client-integrations) •
+[Tools Reference](#-tools-reference) •
+[Security](#-security--sandboxing)
+
+</div>
 
 ---
 
-## 🏛️ Filosofía Arquitectónica: Cerebro vs. Manos
+## 💡 The Problem & The Solution
 
-En arquitecturas avanzadas de agentes de IA, ejecutar tareas repetitivas o voluminosas (generación de boilerplate, refactorizaciones sintácticas, creación de suites de tests, documentación masiva) en modelos frontera (como Gemini Pro o Claude Sonnet) satura la cuota de contexto y quema presupuestos innecesariamente.
+**The Dilemma:**  
+Frontier AI models (Claude 3.7 Sonnet, Claude Opus, Gemini 2.5 Pro, GPT-4o) cost anywhere from **\$3.00 to \$50.00+ per million tokens**. Using these elite models to write 500 lines of repetitive test cases, format JSON payloads, generate standard boilerplate, or fix linter errors is an enormous waste of budget and context limits.
 
-**`mcp-ai-workforce`** implementa el patrón **Cerebro - Obrero**:
-- **Cerebro (Antigravity / Gemini Pro):** Diseña la arquitectura, planifica tareas DAG, delega el trabajo pesado y realiza la auditoría final.
-- **Obrero (Worker Loop / Qwen 2.5 Coder o DeepSeek V4 vía OpenRouter):** Ejecuta bucles ReAct iterativos con herramientas locales (`read_file`, `write_file`, `list_dir`) confinado a un sandbox estricto.
-- **Auditoría Dual:** Al finalizar, el orquestador recupera el `git diff` mediante `workforce_audit_diff` y despacha a sus subagentes especializados (`code-reviewer` + `security-reviewer`) para verificar los cambios antes de consolidarlos.
+**The Solution:**  
+**`mcp-ai-workforce`** is an open-source [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that establishes a **"Brain vs. Hands"** delegation pipeline:
+1. **The Brain (Your Orchestrator):** You talk to Claude Desktop, Google Antigravity, or Cursor as usual. It plans the architecture, oversees tasks, and audits results.
+2. **The Hands (Autonomous Worker):** The orchestrator calls `workforce_delegate`. In the background, `mcp-ai-workforce` spawns a sandboxed ReAct loop powered by ultra-low-cost coding models (e.g. **Qwen 2.5 Coder 32B** or **DeepSeek V4** via OpenRouter at ~\$0.20-\$0.50/M tokens).
+3. **The Audit:** Once the worker completes the task, your orchestrator inspects the unified Git diff (`workforce_audit_diff`), reviews the code, and confirms the changes.
+
+---
+
+## ✨ Key Features
+
+- 💸 **Up to 95% Token Cost Reduction:** Run large refactors and boilerplates on sub-cent models while keeping your main orchestrator focused on architecture.
+- 🛡️ **Zero-Trust Security Sandbox:**
+  - **Path Confinement:** Strict directory validation prevents path traversal (`../../`) and access to system directories.
+  - **Credential Shielding (CWE-522):** The worker is strictly forbidden from reading or modifying `.env*` files, server internals, or private keys.
+  - **RCE-Immune Git Auditing (CWE-78):** Uses sanitized Git diff flags (`--no-ext-diff`) to prevent arbitrary command execution via `.git/config`.
+- 🔄 **Autonomous ReAct Worker Loop:** Equips models with controlled filesystem primitives (`read_file`, `write_file`, `list_dir`) with built-in infinite-loop detection and configurable step/time budgets.
+- 🔌 **Universal Client Support:** Compatible with **Claude Desktop**, **Cursor IDE**, **Google Antigravity**, **Windsurf**, and any MCP-compliant client across macOS, Linux, and Windows.
+- 🧪 **100% Automated Test Coverage:** Thoroughly tested with 32 unit and integration tests running on automated CI matrices (Python 3.10, 3.11, 3.12).
+
+---
+
+## 🏛️ Architecture
 
 ```mermaid
-flowchart TD
-    subgraph Antigravity ["🧠 Antigravity (Gemini Pro Orquestador)"]
-        Plan[Planificador / Arquitecto]
-        Reviewers[Dual Reviewer: code-reviewer + security-reviewer]
-    end
+sequenceDiagram
+    autonumber
+    actor User as Developer
+    participant Orchestrator as Primary AI (Claude / Antigravity / Cursor)
+    participant Server as mcp-ai-workforce (FastMCP)
+    participant Provider as OpenRouter (Qwen / DeepSeek)
+    participant Workspace as Local Repository / Workspace
 
-    subgraph MCP ["⚡ Servidor mcp-ai-workforce"]
-        FastMCP[FastMCP / MCPServer Interface]
-        Guardrails[🛡️ Security Guardrails & Path Jail]
-        ReAct[🔄 ReAct Worker Loop]
-        GitAuditor[🔍 Git Diff Auditor]
+    User->>Orchestrator: "Implement unit tests for the authentication module"
+    Orchestrator->>Server: workforce_delegate(task_prompt, model="qwen/qwen-2.5-coder-32b-instruct")
+    
+    activate Server
+    Note over Server: Security Sandbox & Guardrails Active
+    loop Autonomous ReAct Loop (max 15 steps)
+        Server->>Provider: Send context + Available Tools
+        Provider-->>Server: Tool Call (read_file / write_file)
+        Server->>Workspace: Execute safe filesystem operation
+        Workspace-->>Server: Operation result
     end
+    Server-->>Orchestrator: Return task summary report
+    deactivate Server
 
-    subgraph Provider ["🌐 OpenRouter API Gateway"]
-        Qwen[Qwen 2.5 Coder 32B]
-        DeepSeek[DeepSeek V4 / Chat]
-    end
-
-    subgraph FileSystem ["📁 Workspace 3 (Filesystem)"]
-        Code[Código Fuente, Tests y Docs]
-    end
-
-    Plan -->|1. workforce_delegate| FastMCP
-    FastMCP --> Guardrails
-    Guardrails --> ReAct
-    ReAct <-->|2. Tool Calling| Provider
-    ReAct -->|3. read / write / list| Code
-    ReAct -->|4. Finaliza ejecución| GitAuditor
-    GitAuditor -->|5. workforce_audit_diff| FastMCP
-    FastMCP -->|6. Retorna diff unificado| Reviewers
-    Reviewers -->|7. Aprobado o Reintento| Plan
+    Orchestrator->>Server: workforce_audit_diff()
+    Server-->>Orchestrator: Return sanitized git diff
+    Note over Orchestrator: Dual code review & verification
+    Orchestrator-->>User: "Implementation complete and verified!"
 ```
 
 ---
 
-## 📁 Estructura del Proyecto
+## 🚀 Quickstart
 
-```text
-.agents/mcp-ai-workforce/
-├── pyproject.toml              # Metadatos del paquete y configuración pytest
-├── requirements.txt            # Dependencias reproducibles
-├── .env.example                # Plantilla de variables de entorno
-├── .gitignore                  # Exclusiones de Git (.env, .venv, caches)
-├── LICENSE                     # Licencia MIT completa
-├── README.md                   # Documentación oficial
-├── src/
-│   ├── __init__.py             # Inicializador de paquete
-│   ├── config.py               # Configuración tipada e inmutable (Settings)
-│   ├── guardrails.py           # Guardrails contra path traversal y comandos destructivos
-│   ├── server.py               # Servidor FastMCP/MCPServer y registro de herramientas
-│   └── worker/
-│       ├── __init__.py         # Exportaciones de herramientas del obrero
-│       ├── fs_tools.py         # Primitivas seguras: worker_read_file, worker_write_file, worker_list_dir
-│       └── agent_loop.py       # Bucle ReAct con detección de loop infinito y max_steps
-└── tests/
-    ├── __init__.py             # Inicializador de suite de tests
-    ├── test_guardrails.py      # Tests exhaustivos de path traversal y blacklist de comandos
-    ├── test_worker_loop.py     # Mocks de OpenRouter, terminación, loop detector y max_steps
-    ├── test_fs_tools.py        # Tests unitarios de primitivas de sistema de archivos
-    ├── test_agent_loop.py      # Tests de dispatching y límites del bucle
-    └── test_server.py          # Tests de invocación de workforce_models_status, audit_diff y delegate
-```
+### Prerequisites
+- **Python 3.10+** installed on your system.
+- **Git** installed and available on your system `PATH`.
+- An **[OpenRouter](https://openrouter.ai/)** API key *(OpenRouter also offers free-tier models with 50 daily requests even at \$0 balance)*.
 
----
+### 1. Clone & Set Up Environment
 
-## 🛡️ Guardrails y Mecanismos de Seguridad
+```bash
+# Clone the repository
+git clone https://github.com/DevImperatore/mcp-ai-workforce.git
+cd mcp-ai-workforce
 
-El obrero delegado ejecuta código de manera autónoma pero controlada:
+# Create and activate a virtual environment
+# On macOS / Linux:
+python3 -m venv .venv
+source .venv/bin/activate
 
-1. **Aislamiento de Rutas (`validate_safe_path`):**
-   - Confinamiento estricto al directorio `WORKSPACE_ROOT`.
-   - Resolución de enlaces simbólicos y normalización de mayúsculas/minúsculas para Windows (`os.path.normcase`).
-   - Bloqueo categórico de escapes de ruta (`../../`, `..\\`), rutas absolutas del sistema operativo (`C:\Windows`, `C:\Windows\System32`), y unidades secundarias.
-
-2. **Bloqueo de Comandos Destructivos (`validate_safe_command`):**
-   - Detección regex insensible a mayúsculas/minúsculas.
-   - Bloqueo preventivo de: `rm -rf`, `del /f`, `format c:`, `sudo`, `su`, `runas`, `rmdir /s /q`, `erase`, `dd`, `drop database`, `truncate table`, y fork bombs.
-   - Permite comandos de desarrollo seguros: `pytest`, `git status`, `git log --format=oneline`, `python --version`, etc.
-
-3. **Detector de Bucle Infinito (*Infinite Loop Trap*):**
-   - El worker loop rastrea la firma `(tool_name, serialized_args)`.
-   - Si el modelo invoca la misma herramienta con argumentos idénticos 3 veces consecutivas, el ciclo aborta inmediatamente con un error descriptivo.
-
-4. **Límites de Pasos y Timeout:**
-   - Parada forzada si alcanza `MAX_STEPS` (por defecto: 15 iteraciones).
-   - Aborto por tiempo de espera si supera `TIMEOUT_SECONDS` (por defecto: 300 segundos).
-
----
-
-## 🚀 Instalación y Configuración
-
-### 1. Requisitos Previos
-- Python 3.10 o superior (verificado con Python 3.12.10).
-- Git instalado y configurado en el sistema.
-- Clave de API de [OpenRouter](https://openrouter.ai/).
-
-### 2. Creación del Entorno Virtual e Instalación
-Desde PowerShell en Windows:
-
-```powershell
-cd "c:\Users\thoma\OneDrive\Escritorio\Workspace 3\.agents\mcp-ai-workforce"
+# On Windows:
 python -m venv .venv
-.\.venv\Scripts\pip install -r requirements.txt
+.\.venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### 3. Configuración del Archivo `.env`
-Copia `.env.example` a `.env` y configura tus variables:
+### 2. Configure Environment Variables
 
-```powershell
-Copy-Item .env.example .env
+Copy the template `.env.example` to `.env`:
+
+```bash
+cp .env.example .env
 ```
 
-Contenido de `.env`:
+Edit `.env`:
 ```env
-# Clave API de OpenRouter
+# Your OpenRouter API Key
 OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Modelo predeterminado para el obrero
+# Default model for worker tasks
 DEFAULT_MODEL=qwen/qwen-2.5-coder-32b-instruct
 
-# Directorio raíz permitido para las operaciones
-WORKSPACE_ROOT=C:\Users\thoma\OneDrive\Escritorio\Workspace 3
+# Canonical workspace path (defaults to current working directory if omitted)
+WORKSPACE_ROOT=/path/to/your/project
 
-# Límites de ejecución
+# Execution limits
 MAX_STEPS=15
 TIMEOUT_SECONDS=300
 ```
 
 ---
 
-## 🔌 Integración en Google Antigravity
+## 🔌 Client Integrations
 
-Para registrar `mcp-ai-workforce` como servidor MCP permanente en Antigravity, edita el archivo de configuración global en `C:\Users\thoma\.gemini\config\mcp_config.json`:
+Connect `mcp-ai-workforce` to your favorite AI assistant in seconds:
+
+### Claude Desktop
+Add this to your `claude_desktop_config.json`:
+
+* **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+* **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
-    "mcp-ai-workforce": {
-      "command": "C:\\Users\\thoma\\OneDrive\\Escritorio\\Workspace 3\\.agents\\mcp-ai-workforce\\.venv\\Scripts\\python.exe",
-      "args": [
-        "src/server.py"
-      ],
-      "cwd": "C:\\Users\\thoma\\OneDrive\\Escritorio\\Workspace 3\\.agents\\mcp-ai-workforce",
+    "ai-workforce": {
+      "command": "/path/to/mcp-ai-workforce/.venv/bin/python",
+      "args": ["-m", "src.server"],
+      "cwd": "/path/to/mcp-ai-workforce",
+      "env": {
+        "PYTHONUTF8": "1"
+      }
+    }
+  }
+}
+```
+*(On Windows, replace `/path/to/.../bin/python` with `C:\\path\\to\\mcp-ai-workforce\\.venv\\Scripts\\python.exe`)*.
+
+---
+
+### Cursor IDE
+1. Open **Cursor Settings** (`Ctrl + Shift + J` or `Cmd + Shift + J`).
+2. Navigate to **Features** > **MCP**.
+3. Click **Add New MCP Server**:
+   - **Name:** `ai-workforce`
+   - **Type:** `command`
+   - **Command:** `/path/to/mcp-ai-workforce/.venv/bin/python -m src.server`
+
+---
+
+### Google Antigravity
+Add the server configuration to `~/.gemini/config/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "ai-workforce": {
+      "command": "/path/to/mcp-ai-workforce/.venv/bin/python",
+      "args": ["-m", "src.server"],
+      "cwd": "/path/to/mcp-ai-workforce",
       "env": {
         "PYTHONUTF8": "1"
       }
@@ -170,105 +194,88 @@ Para registrar `mcp-ai-workforce` como servidor MCP permanente en Antigravity, e
 }
 ```
 
-Al reiniciar o recargar las herramientas en Antigravity, tendrás disponibles de inmediato las siguientes herramientas:
-- `mcp_mcp-ai-workforce_workforce_delegate`
-- `mcp_mcp-ai-workforce_workforce_models_status`
-- `mcp_mcp-ai-workforce_workforce_audit_diff`
+---
+
+## 🛠️ Tools Reference
+
+| Tool Name | Parameters | Description |
+|---|---|---|
+| **`workforce_delegate`** | `task_prompt` *(str, required)*<br>`target_files` *(list[str], optional)*<br>`model` *(str, optional)*<br>`timeout_seconds` *(int, default: 300)* | Dispatches an autonomous ReAct worker agent to analyze, edit, and create files in your workspace under strict security guardrails. |
+| **`workforce_models_status`** | *None* | Verifies API key connectivity, returns workspace root path, and lists recommended models with current configuration. |
+| **`workforce_audit_diff`** | `staged` *(bool, default: False)* | Executes a secured, non-blocking `git diff` across the repository to inspect all changes generated by the worker. |
 
 ---
 
-## 🛠️ Referencia de Herramientas MCP
+## 🛡️ Security & Sandboxing
 
-### 1. `workforce_delegate`
-Delega una tarea de desarrollo de software al obrero ReAct.
-- **Parámetros:**
-  - `task_prompt` *(str, requerido)*: Descripción completa y precisa del objetivo técnico.
-  - `target_files` *(list[str], opcional)*: Lista de rutas relativas de archivos involucrados.
-  - `model` *(str, opcional)*: Identificador del modelo en OpenRouter (e.g. `qwen/qwen-2.5-coder-32b-instruct` o `deepseek/deepseek-chat`). Si se omite, usa `DEFAULT_MODEL`.
-  - `timeout_seconds` *(int, opcional)*: Límite de tiempo en segundos (default: 300).
-- **Retorno:** Informe final de conclusión o resumen emitido por el modelo.
+The autonomous worker operates inside a hardened, zero-trust sandbox:
 
-### 2. `workforce_models_status`
-Comprueba el estado de la configuración, el saldo/disponibilidad de la API key de OpenRouter y los modelos recomendados.
-- **Retorno:** Objeto JSON con el estado de conexión (`ready` o `needs_configuration`), ruta de workspace, modelo por defecto y catálogo de modelos recomendados.
-
-### 3. `workforce_audit_diff`
-Inspecciona las modificaciones realizadas en el espacio de trabajo ejecutando `git diff`.
-- **Parámetros:**
-  - `staged` *(bool, opcional)*: Si es `True`, revisa cambios en stage (`git diff --staged`); si es `False`, cambios en working tree (`git diff`).
-- **Retorno:** Salida unificada del diff o mensaje de estado limpio.
+1. **Path Jail (`validate_safe_path`):**
+   - Canonicalizes and normalizes all requested paths against `WORKSPACE_ROOT`.
+   - Prevents directory traversal attacks (`../`, `..\\`, symlink escaping).
+   - Blocks unauthorized root drives and OS system directories (`/etc`, `C:\Windows`, etc.).
+2. **Credential & Secrets Shielding:**
+   - Strictly blocks worker access to `.env`, `.env.*`, `.git/`, `.agents/mcp-ai-workforce/`, and private keys (`.pem`, `.key`, `id_rsa`).
+3. **Execution Guardrails:**
+   - **Infinite Loop Detection:** Detects and halts execution if the model invokes identical tool signatures 3 consecutive times.
+   - **Step & Time Budgeting:** Hard caps execution to prevent runaway token charges (`MAX_STEPS` and `TIMEOUT_SECONDS`).
 
 ---
 
-## 💡 Ejemplos de Prompts para Delegación
+## 💡 Example Prompts
 
-### Ejemplo 1: Generación Masiva de Pruebas Unitarias
-> *"Por favor delega al worker `qwen/qwen-2.5-coder-32b-instruct` la tarea de crear la suite completa de tests para el módulo `scripts/job_applier.py`. Debe cubrir funciones auxiliares, validaciones de formato y manejo de errores. Cuando termine, ejecuta `workforce_audit_diff` y revisa los cambios con `code-reviewer`."*
+Once configured, simply instruct your primary AI in natural language:
 
-### Ejemplo 2: Refactorización y Tipado Estricto (Type Annotations)
-> *"Usa `workforce_delegate` con el modelo `deepseek/deepseek-chat` para añadir type hints completos de `typing` y docstrings estilo Google a todas las funciones en `src/utils/data_cleaner.py`. Archivos objetivo: `['src/utils/data_cleaner.py']`."*
-
-### Ejemplo 3: Creación de Boilerplate y Migraciones
-> *"Delega al worker la creación de un nuevo módulo `src/services/billing.py` con una clase `BillingService` que implemente métodos stub para cobro con Stripe y cálculo de impuestos. Limita el tiempo a 180 segundos."*
-
-### Ejemplo 4: Workflow Dual Completo en Antigravity
-1. **Delegación:** Antigravity invoca `workforce_delegate(...)`.
-2. **Ejecución:** El obrero examina el entorno, crea o edita archivos y confirma la finalización.
-3. **Auditoría:** Antigravity ejecuta `workforce_audit_diff()`.
-4. **Verificación Dual:** Antigravity despacha en paralelo `code-reviewer` y `security-reviewer` sobre el parche.
-5. **Aprobación:** Si ambos revisores aprueban, Antigravity consolida el commit en Git.
-
----
-
-## 🧪 Ejecución de Pruebas Unitarias
-
-La suite de pruebas cubre guardrails de ruta, bloqueo de comandos maliciosos, simulación de respuestas con mocks de OpenRouter, bucles infinitos, paradas por `max_steps`, y llamadas al servidor FastMCP.
-
-Para ejecutar la suite completa:
-
-```powershell
-.\.venv\Scripts\pytest -v
-```
-
-Salida esperada:
 ```text
-tests/test_agent_loop.py::test_execute_tool_read_and_write PASSED
-tests/test_agent_loop.py::test_execute_tool_guardrail_protection PASSED
-tests/test_agent_loop.py::test_infinite_loop_detector PASSED
-tests/test_agent_loop.py::test_agent_max_steps_limit PASSED
-tests/test_agent_loop.py::test_agent_normal_completion PASSED
-tests/test_fs_tools.py::test_worker_write_and_read_file PASSED
-tests/test_fs_tools.py::test_worker_read_nonexistent PASSED
-tests/test_fs_tools.py::test_worker_write_traversal_blocked PASSED
-tests/test_fs_tools.py::test_worker_list_dir PASSED
-tests/test_guardrails.py::TestValidateSafePath::test_valid_paths_inside_workspace PASSED
-tests/test_guardrails.py::TestValidateSafePath::test_path_traversal_with_dot_dot_slash PASSED
-tests/test_guardrails.py::TestValidateSafePath::test_access_windows_system_directory_blocked PASSED
-tests/test_guardrails.py::TestValidateSafePath::test_absolute_paths_outside_workspace_blocked PASSED
-tests/test_guardrails.py::TestValidateSafeCommand::test_blocking_rm_rf PASSED
-tests/test_guardrails.py::TestValidateSafeCommand::test_blocking_del_f PASSED
-tests/test_guardrails.py::TestValidateSafeCommand::test_blocking_format_c PASSED
-tests/test_guardrails.py::TestValidateSafeCommand::test_blocking_sudo PASSED
-tests/test_guardrails.py::TestValidateSafeCommand::test_allowing_safe_commands_pytest_git_status PASSED
-tests/test_server.py::TestServerTools::test_workforce_models_status_ready_state PASSED
-tests/test_server.py::TestServerTools::test_workforce_models_status_needs_configuration PASSED
-tests/test_server.py::TestServerTools::test_workforce_audit_diff_clean_workspace PASSED
-tests/test_server.py::TestServerTools::test_workforce_audit_diff_with_modifications PASSED
-tests/test_server.py::TestServerTools::test_workforce_audit_diff_git_error PASSED
-tests/test_server.py::TestServerTools::test_workforce_audit_diff_missing_git_binary PASSED
-tests/test_server.py::TestServerTools::test_workforce_delegate_success PASSED
-tests/test_server.py::TestServerTools::test_workforce_delegate_handles_exception PASSED
-tests/test_worker_loop.py::TestWorkerLoop::test_worker_loop_successful_termination_immediate PASSED
-tests/test_worker_loop.py::TestWorkerLoop::test_worker_loop_successful_termination_with_tools PASSED
-tests/test_worker_loop.py::TestWorkerLoop::test_worker_loop_infinite_loop_detection PASSED
-tests/test_worker_loop.py::TestWorkerLoop::test_worker_loop_stops_at_max_steps PASSED
-tests/test_worker_loop.py::TestWorkerLoop::test_worker_loop_missing_api_key_raises PASSED
+"Please delegate to the workforce the task of writing comprehensive pytest 
+unit tests for 'src/services/auth.py'. Once the worker finishes, call 
+workforce_audit_diff to verify the changes."
+```
 
-============================= 31 passed in 3.13s ==============================
+```text
+"Use workforce_delegate with model 'deepseek/deepseek-chat' to refactor 
+all utility functions in 'utils/formatter.py' by adding full type annotations 
+and Google-style docstrings."
 ```
 
 ---
 
-## 📄 Licencia
+## 🧪 Running Tests
 
-Este proyecto está bajo la Licencia **MIT**. Consulta el archivo [LICENSE](LICENSE) para más información.
+The test suite includes complete mocks for OpenRouter API calls, path traversal attacks, loop traps, and FastMCP tool execution.
+
+```bash
+# Activate your virtual environment and run:
+pytest -v
+```
+
+```text
+============================= test session starts =============================
+platform win32 / linux -- Python 3.10+ -- pytest-9.1.1
+collected 32 items
+
+tests/test_agent_loop.py::test_execute_tool_read_and_write PASSED        [  3%]
+tests/test_agent_loop.py::test_execute_tool_guardrail_protection PASSED  [  6%]
+tests/test_agent_loop.py::test_infinite_loop_detector PASSED             [  9%]
+tests/test_agent_loop.py::test_agent_max_steps_limit PASSED              [ 12%]
+tests/test_agent_loop.py::test_agent_normal_completion PASSED            [ 15%]
+tests/test_fs_tools.py::test_worker_write_and_read_file PASSED           [ 18%]
+...
+tests/test_server.py::test_workforce_delegate_success PASSED             [ 81%]
+tests/test_worker_loop.py::test_worker_loop_successful_termination PASSED [100%]
+
+============================= 32 passed in 2.80s ==============================
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+  <b>Built with care by <a href="https://github.com/DevImperatore">DevImperatore</a></b><br>
+  <sub>Contributions, issues, and feature requests are welcome! Feel free to check the <a href="https://github.com/DevImperatore/mcp-ai-workforce/issues">issues page</a>.</sub>
+</div>

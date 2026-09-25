@@ -48,11 +48,11 @@ def _resolve_workspace_root(env_val: Optional[str]) -> Path:
         env_val: Value provided in the environment, if any.
 
     Returns:
-        Canonical absolute Path to the workspace root.
+        Canonical absolute Path to the workspace root. Defaults to current working directory.
     """
-    default_path = r"C:\Users\thoma\OneDrive\Escritorio\Workspace 3"
-    raw_path = env_val.strip() if env_val and env_val.strip() else default_path
-    return Path(raw_path).resolve()
+    if env_val and env_val.strip():
+        return Path(env_val.strip()).resolve()
+    return Path.cwd().resolve()
 
 
 def get_settings() -> Settings:
