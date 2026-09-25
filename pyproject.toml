@@ -5,10 +5,22 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mcp-ai-workforce"
 version = "0.1.0"
-description = "MCP server for AI Workforce orchestration with guardrails and ReAct worker loop"
-authors = [{ name = "Workspace 3 Agent", email = "agent@workspace3.local" }]
+description = "Autonomous Model Context Protocol server for cost-effective AI coding delegation"
+authors = [{ name = "Thomas Reyes Ramirez (DevImperatore)" }]
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.10"
+keywords = ["mcp", "model-context-protocol", "openrouter", "deepseek", "qwen", "ai-agents", "code-generation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Code Generators",
+]
 dependencies = [
     "mcp>=1.2.0",
     "openai>=1.50.0",
@@ -21,7 +33,14 @@ dev = [
     "pytest-asyncio>=0.23.0",
 ]
 
+[project.scripts]
+mcp-ai-workforce = "src.server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["."]
 asyncio_mode = "auto"

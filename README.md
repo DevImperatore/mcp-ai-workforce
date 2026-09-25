@@ -98,7 +98,10 @@ source .venv/bin/activate
 python -m venv .venv
 .\.venv\Scripts\activate
 
-# Install dependencies
+# Install in editable mode (registers the 'mcp-ai-workforce' CLI command)
+pip install -e .
+
+# Or install dependencies from requirements.txt
 pip install -r requirements.txt
 ```
 
@@ -130,11 +133,28 @@ TIMEOUT_SECONDS=300
 
 ## Client Integrations
 
+The server can be executed directly via its entry point command (`mcp-ai-workforce`), via `uvx` / `pipx`, or by referencing the virtual environment Python interpreter.
+
 ### Claude Desktop
 Add the following entry to `claude_desktop_config.json`:
 
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "ai-workforce": {
+      "command": "mcp-ai-workforce",
+      "env": {
+        "OPENROUTER_API_KEY": "sk-or-v1-xxxxxxxxxxxxxxxx"
+      }
+    }
+  }
+}
+```
+
+Or using an explicit virtual environment:
 
 ```json
 {
@@ -155,17 +175,84 @@ Add the following entry to `claude_desktop_config.json`:
 ---
 
 ### Cursor IDE
+Configure through `.cursor/mcp.json` or through Cursor Settings:
+
 1. Open Cursor Settings (`Ctrl + Shift + J` or `Cmd + Shift + J`).
 2. Navigate to **Features** > **MCP**.
 3. Select **Add New MCP Server**:
    - **Name:** `ai-workforce`
    - **Type:** `command`
-   - **Command:** `/path/to/mcp-ai-workforce/.venv/bin/python -m src.server`
+   - **Command:** `mcp-ai-workforce` (or `/path/to/mcp-ai-workforce/.venv/bin/python -m src.server`)
+
+Or add directly to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "ai-workforce": {
+      "command": "mcp-ai-workforce",
+      "env": {
+        "OPENROUTER_API_KEY": "sk-or-v1-xxxxxxxxxxxxxxxx"
+      }
+    }
+  }
+}
+```
 
 ---
 
 ### Google Antigravity
 Add the server configuration to `~/.gemini/config/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "ai-workforce": {
+      "command": "mcp-ai-workforce",
+      "env": {
+        "OPENROUTER_API_KEY": "sk-or-v1-xxxxxxxxxxxxxxxx"
+      }
+    }
+  }
+}
+```
+
+Or using virtual environment paths:
+
+```json
+{
+  "mcpServers": {
+    "ai-workforce": {
+      "command": "/path/to/mcp-ai-workforce/.venv/bin/python",
+      "args": ["-m", "src.server"],
+      "cwd": "/path/to/mcp-ai-workforce",
+      "env": {
+        "PYTHONUTF8": "1"
+      }
+    }
+  }
+}
+```
+
+---
+
+### Windsurf (Codeium)
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "ai-workforce": {
+      "command": "mcp-ai-workforce",
+      "env": {
+        "OPENROUTER_API_KEY": "sk-or-v1-xxxxxxxxxxxxxxxx"
+      }
+    }
+  }
+}
+```
+
+Or using explicit Python path:
 
 ```json
 {

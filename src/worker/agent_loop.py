@@ -163,7 +163,7 @@ def run_worker_agent(
 
     # Build system and initial user instructions
     system_prompt = (
-        "You are an expert autonomous software engineer worker operating inside Workspace 3.\n"
+        "You are an expert autonomous software engineer worker operating inside the target repository workspace.\n"
         "You have access to filesystem tools (`read_file`, `write_file`, `list_dir`).\n"
         "All file paths must be relative to the workspace root.\n"
         "Work methodically: examine existing files, formulate a plan, make changes, "
