@@ -1,6 +1,4 @@
-<div align="center">
-
-# ⚡ MCP AI Workforce
+# MCP AI Workforce
 
 ### Autonomous Model Context Protocol Server for Cost-Effective AI Coding Delegation
 
@@ -11,48 +9,40 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat)](LICENSE)
 [![Tests: 32 passed](https://img.shields.io/badge/tests-32%20passed-brightgreen.svg?style=flat)]()
 
-<p align="center">
-  <b>Empower your primary AI orchestrator to delegate token-heavy coding tasks to economical models — reducing token expenditure by up to 95%.</b>
-</p>
+Empower primary AI orchestrators to delegate token-heavy coding tasks to economical models via OpenRouter, reducing token expenditure by up to 95%.
 
-[Key Features](#-key-features) •
-[Architecture](#-architecture) •
-[Quickstart](#-quickstart) •
-[Client Integrations](#-client-integrations) •
-[Tools Reference](#-tools-reference) •
-[Security](#-security--sandboxing)
-
-</div>
+[Key Features](#key-features) | [Architecture](#architecture) | [Quickstart](#quickstart) | [Client Integrations](#client-integrations) | [Tools Reference](#tools-reference) | [Security](#security--sandboxing)
 
 ---
 
-## 💡 The Problem & The Solution
+## The Problem and The Solution
 
-**The Dilemma:**  
-Frontier AI models (Claude 3.7 Sonnet, Claude Opus, Gemini 2.5 Pro, GPT-4o) cost anywhere from **\$3.00 to \$50.00+ per million tokens**. Using these elite models to write 500 lines of repetitive test cases, format JSON payloads, generate standard boilerplate, or fix linter errors is an enormous waste of budget and context limits.
+### The Problem
+Frontier AI models (Claude 3.7 Sonnet, Claude Opus, Gemini 2.5 Pro, GPT-4o) cost anywhere from $3.00 to $50.00+ per million tokens. Using these elite models for tasks such as writing repetitive test suites, formatting JSON payloads, generating boilerplate, or fixing syntactic linter errors consumes valuable context windows and leads to high operational costs.
 
-**The Solution:**  
-**`mcp-ai-workforce`** is an open-source [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that establishes a **"Brain vs. Hands"** delegation pipeline:
-1. **The Brain (Your Orchestrator):** You talk to Claude Desktop, Google Antigravity, or Cursor as usual. It plans the architecture, oversees tasks, and audits results.
-2. **The Hands (Autonomous Worker):** The orchestrator calls `workforce_delegate`. In the background, `mcp-ai-workforce` spawns a sandboxed ReAct loop powered by ultra-low-cost coding models (e.g. **Qwen 2.5 Coder 32B** or **DeepSeek V4** via OpenRouter at ~\$0.20-\$0.50/M tokens).
-3. **The Audit:** Once the worker completes the task, your orchestrator inspects the unified Git diff (`workforce_audit_diff`), reviews the code, and confirms the changes.
+### The Solution
+`mcp-ai-workforce` is an open-source Model Context Protocol (MCP) server that establishes a two-tier delegation architecture:
 
----
-
-## ✨ Key Features
-
-- 💸 **Up to 95% Token Cost Reduction:** Run large refactors and boilerplates on sub-cent models while keeping your main orchestrator focused on architecture.
-- 🛡️ **Zero-Trust Security Sandbox:**
-  - **Path Confinement:** Strict directory validation prevents path traversal (`../../`) and access to system directories.
-  - **Credential Shielding (CWE-522):** The worker is strictly forbidden from reading or modifying `.env*` files, server internals, or private keys.
-  - **RCE-Immune Git Auditing (CWE-78):** Uses sanitized Git diff flags (`--no-ext-diff`) to prevent arbitrary command execution via `.git/config`.
-- 🔄 **Autonomous ReAct Worker Loop:** Equips models with controlled filesystem primitives (`read_file`, `write_file`, `list_dir`) with built-in infinite-loop detection and configurable step/time budgets.
-- 🔌 **Universal Client Support:** Compatible with **Claude Desktop**, **Cursor IDE**, **Google Antigravity**, **Windsurf**, and any MCP-compliant client across macOS, Linux, and Windows.
-- 🧪 **100% Automated Test Coverage:** Thoroughly tested with 32 unit and integration tests running on automated CI matrices (Python 3.10, 3.11, 3.12).
+1. **The Orchestrator:** The primary AI client (Claude Desktop, Google Antigravity, or Cursor) manages high-level architecture, breaks down engineering goals, and audits changes.
+2. **The Autonomous Worker:** The orchestrator invokes `workforce_delegate`. `mcp-ai-workforce` executes a sandboxed ReAct loop powered by cost-effective coding models (such as Qwen 2.5 Coder 32B or DeepSeek V4 via OpenRouter at approximately $0.20 to $0.50 per million tokens).
+3. **The Audit:** When execution completes, the orchestrator inspects the unified Git diff (`workforce_audit_diff`), conducts automated or manual code reviews, and approves the changes.
 
 ---
 
-## 🏛️ Architecture
+## Key Features
+
+- **Cost Optimization:** Offload routine code generation to economical models while reserving frontier reasoning models for architectural oversight.
+- **Zero-Trust Security Sandbox:**
+  - **Path Confinement:** Validates canonical paths against the configured root directory to prevent directory traversal (`../../`) and unauthorized filesystem access.
+  - **Credential Shielding (CWE-522):** Prohibits the worker from accessing or modifying `.env*` files, server source code, and cryptographic private keys.
+  - **RCE-Immune Git Auditing (CWE-78):** Enforces sanitized flags (`--no-ext-diff`) to prevent arbitrary command execution via `.git/config`.
+- **Autonomous ReAct Worker Loop:** Provides controlled filesystem operations (`read_file`, `write_file`, `list_dir`) with built-in infinite-loop detection and configurable step and timeout budgets.
+- **Universal Client Support:** Compatible with Claude Desktop, Cursor IDE, Google Antigravity, Windsurf, and any standard MCP client across macOS, Linux, and Windows.
+- **Automated Test Coverage:** Verified with 32 unit and integration tests executing across Python 3.10, 3.11, and 3.12 in continuous integration.
+
+---
+
+## Architecture
 
 ```mermaid
 sequenceDiagram
@@ -63,14 +53,14 @@ sequenceDiagram
     participant Provider as OpenRouter (Qwen / DeepSeek)
     participant Workspace as Local Repository / Workspace
 
-    User->>Orchestrator: "Implement unit tests for the authentication module"
+    User->>Orchestrator: Implement unit tests for authentication module
     Orchestrator->>Server: workforce_delegate(task_prompt, model="qwen/qwen-2.5-coder-32b-instruct")
     
     activate Server
     Note over Server: Security Sandbox & Guardrails Active
     loop Autonomous ReAct Loop (max 15 steps)
-        Server->>Provider: Send context + Available Tools
-        Provider-->>Server: Tool Call (read_file / write_file)
+        Server->>Provider: Send context and available tools
+        Provider-->>Server: Tool call (read_file / write_file)
         Server->>Workspace: Execute safe filesystem operation
         Workspace-->>Server: Operation result
     end
@@ -79,20 +69,20 @@ sequenceDiagram
 
     Orchestrator->>Server: workforce_audit_diff()
     Server-->>Orchestrator: Return sanitized git diff
-    Note over Orchestrator: Dual code review & verification
-    Orchestrator-->>User: "Implementation complete and verified!"
+    Note over Orchestrator: Code review and verification
+    Orchestrator-->>User: Implementation complete and verified
 ```
 
 ---
 
-## 🚀 Quickstart
+## Quickstart
 
 ### Prerequisites
-- **Python 3.10+** installed on your system.
-- **Git** installed and available on your system `PATH`.
-- An **[OpenRouter](https://openrouter.ai/)** API key *(OpenRouter also offers free-tier models with 50 daily requests even at \$0 balance)*.
+- Python 3.10 or higher.
+- Git installed and available on system PATH.
+- An [OpenRouter](https://openrouter.ai/) API key.
 
-### 1. Clone & Set Up Environment
+### 1. Clone and Set Up Environment
 
 ```bash
 # Clone the repository
@@ -122,7 +112,7 @@ cp .env.example .env
 
 Edit `.env`:
 ```env
-# Your OpenRouter API Key
+# OpenRouter API Key
 OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Default model for worker tasks
@@ -138,15 +128,13 @@ TIMEOUT_SECONDS=300
 
 ---
 
-## 🔌 Client Integrations
-
-Connect `mcp-ai-workforce` to your favorite AI assistant in seconds:
+## Client Integrations
 
 ### Claude Desktop
-Add this to your `claude_desktop_config.json`:
+Add the following entry to `claude_desktop_config.json`:
 
-* **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-* **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -162,14 +150,14 @@ Add this to your `claude_desktop_config.json`:
   }
 }
 ```
-*(On Windows, replace `/path/to/.../bin/python` with `C:\\path\\to\\mcp-ai-workforce\\.venv\\Scripts\\python.exe`)*.
+*Note: On Windows, use `.venv\\Scripts\\python.exe` with properly escaped backslashes.*
 
 ---
 
 ### Cursor IDE
-1. Open **Cursor Settings** (`Ctrl + Shift + J` or `Cmd + Shift + J`).
+1. Open Cursor Settings (`Ctrl + Shift + J` or `Cmd + Shift + J`).
 2. Navigate to **Features** > **MCP**.
-3. Click **Add New MCP Server**:
+3. Select **Add New MCP Server**:
    - **Name:** `ai-workforce`
    - **Type:** `command`
    - **Command:** `/path/to/mcp-ai-workforce/.venv/bin/python -m src.server`
@@ -196,35 +184,35 @@ Add the server configuration to `~/.gemini/config/mcp_config.json`:
 
 ---
 
-## 🛠️ Tools Reference
+## Tools Reference
 
 | Tool Name | Parameters | Description |
 |---|---|---|
-| **`workforce_delegate`** | `task_prompt` *(str, required)*<br>`target_files` *(list[str], optional)*<br>`model` *(str, optional)*<br>`timeout_seconds` *(int, default: 300)* | Dispatches an autonomous ReAct worker agent to analyze, edit, and create files in your workspace under strict security guardrails. |
-| **`workforce_models_status`** | *None* | Verifies API key connectivity, returns workspace root path, and lists recommended models with current configuration. |
-| **`workforce_audit_diff`** | `staged` *(bool, default: False)* | Executes a secured, non-blocking `git diff` across the repository to inspect all changes generated by the worker. |
+| `workforce_delegate` | `task_prompt` *(str, required)*<br>`target_files` *(list[str], optional)*<br>`model` *(str, optional)*<br>`timeout_seconds` *(int, default: 300)* | Dispatches an autonomous ReAct worker agent to inspect, modify, and create workspace files under strict security guardrails. |
+| `workforce_models_status` | None | Reports API key connectivity, canonical workspace root path, execution limits, and recommended models. |
+| `workforce_audit_diff` | `staged` *(bool, default: False)* | Executes a non-blocking git diff across the repository to inspect all changes generated by the worker. |
 
 ---
 
-## 🛡️ Security & Sandboxing
+## Security and Sandboxing
 
-The autonomous worker operates inside a hardened, zero-trust sandbox:
+The autonomous worker executes within a zero-trust sandbox:
 
 1. **Path Jail (`validate_safe_path`):**
-   - Canonicalizes and normalizes all requested paths against `WORKSPACE_ROOT`.
-   - Prevents directory traversal attacks (`../`, `..\\`, symlink escaping).
-   - Blocks unauthorized root drives and OS system directories (`/etc`, `C:\Windows`, etc.).
-2. **Credential & Secrets Shielding:**
-   - Strictly blocks worker access to `.env`, `.env.*`, `.git/`, `.agents/mcp-ai-workforce/`, and private keys (`.pem`, `.key`, `id_rsa`).
+   - Canonicalizes and normalizes all target paths against `WORKSPACE_ROOT`.
+   - Rejects directory traversal attempts (`../`, `..\\`, symlink redirection).
+   - Blocks access to system directories (`/etc`, `C:\Windows`, etc.).
+2. **Credential and Secrets Protection:**
+   - Strictly blocks access to `.env*`, `.git/`, `.agents/mcp-ai-workforce/`, and private keys (`.pem`, `.key`, `id_rsa`).
 3. **Execution Guardrails:**
-   - **Infinite Loop Detection:** Detects and halts execution if the model invokes identical tool signatures 3 consecutive times.
-   - **Step & Time Budgeting:** Hard caps execution to prevent runaway token charges (`MAX_STEPS` and `TIMEOUT_SECONDS`).
+   - **Infinite Loop Detection:** Halts execution if identical tool signatures are called 3 consecutive times.
+   - **Resource Limits:** Enforces step bounds (`MAX_STEPS`) and hard timeouts (`TIMEOUT_SECONDS`) to prevent runaway API consumption.
 
 ---
 
-## 💡 Example Prompts
+## Example Prompts
 
-Once configured, simply instruct your primary AI in natural language:
+Once configured, invoke tasks in natural language via your primary AI interface:
 
 ```text
 "Please delegate to the workforce the task of writing comprehensive pytest 
@@ -240,12 +228,11 @@ and Google-style docstrings."
 
 ---
 
-## 🧪 Running Tests
+## Running Tests
 
-The test suite includes complete mocks for OpenRouter API calls, path traversal attacks, loop traps, and FastMCP tool execution.
+The test suite covers OpenRouter API mocks, path traversal defenses, loop traps, and FastMCP tool endpoints.
 
 ```bash
-# Activate your virtual environment and run:
 pytest -v
 ```
 
@@ -269,13 +256,10 @@ tests/test_worker_loop.py::test_worker_loop_successful_termination PASSED [100%]
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
 ---
 
-<div align="center">
-  <b>Built with care by <a href="https://github.com/DevImperatore">DevImperatore</a></b><br>
-  <sub>Contributions, issues, and feature requests are welcome! Feel free to check the <a href="https://github.com/DevImperatore/mcp-ai-workforce/issues">issues page</a>.</sub>
-</div>
+**Developed by [DevImperatore](https://github.com/DevImperatore)**
